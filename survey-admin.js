@@ -125,7 +125,7 @@ function renderResponses(data) {
     // Question columns
     questions.forEach((question, index) => {
         const questionHeader = document.createElement('th');
-        questionHeader.textContent = question;
+        questionHeader.textContent = `Q${index + 1}`;
         headerRow.appendChild(questionHeader);
     });
 
