@@ -5,6 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback Form</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        textarea.textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        textarea.textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        #progress {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        #question-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        #input-container {
+            margin-bottom: 20px;
+        }
+
+        .success-container {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-container h2 {
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+
+        .success-container p {
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -16,18 +69,14 @@
 
             <div id="survey-container" style="display: none;">
                 <h2 id="survey-title"></h2>
-                <p style="color: #666; margin-bottom: 20px;">Please answer all questions honestly.</p>
 
-                <form id="survey-form">
-                    <div class="form-group">
-                        <label for="name">Your name</label>
-                        <input type="text" id="name" placeholder="Enter your name" required>
-                    </div>
+                <div id="progress" style="display: none;"></div>
 
-                    <div id="questions"></div>
+                <label id="question-label"></label>
 
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
+                <div id="input-container"></div>
+
+                <button id="next-btn" class="btn btn-primary">Next</button>
 
                 <div id="status" style="display: none; margin-top: 20px;"></div>
             </div>
