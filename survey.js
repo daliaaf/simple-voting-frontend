@@ -132,12 +132,8 @@ function renderStep() {
 
         inputWrapperEl.appendChild(textarea);
 
-        // Update button text
-        if (currentStep < questions.length) {
-            actionBtn.textContent = 'Next';
-        } else {
-            actionBtn.textContent = 'Submit';
-        }
+        // Button always says "Next"
+        actionBtn.textContent = 'Next';
 
         setTimeout(() => textarea.focus(), 0);
     }
@@ -219,7 +215,7 @@ async function submitSurvey() {
         console.error('Error submitting survey:', error);
         showStatus('Could not submit, please try again.', true);
         actionBtn.disabled = false;
-        actionBtn.textContent = 'Submit';
+        actionBtn.textContent = 'Next';
     }
 }
 
