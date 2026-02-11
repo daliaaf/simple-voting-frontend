@@ -118,7 +118,7 @@ function renderStep() {
         const questionText = questions[questionIndex];
 
         showElement(progressEl);
-        progressEl.textContent = `Question ${currentStep} of ${questions.length}`;
+        progressEl.textContent = `${currentStep} of ${questions.length}`;
         questionLabelEl.textContent = questionText;
 
         const textarea = document.createElement('textarea');
