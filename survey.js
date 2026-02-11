@@ -80,6 +80,45 @@ async function fetchSurvey() {
 }
 
 // ===================================
+// SAVE PROGRESS
+// ===================================
+async function saveProgress() {
+    // Disable button while saving
+    actionBtn.disabled = true;
+    const originalText = actionBtn.textContent;
+    actionBtn.textContent = 'Saving...';
+
+    try {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/surveys/${surveyId}/responses`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                answers
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Success
+        actionBtn.disabled = false;
+        actionBtn.textContent = originalText;
+        return true;
+
+    } catch (error) {
+        console.error('Error saving progress:', error);
+        showStatus('Could not save, please try again.', true);
+        actionBtn.disabled = false;
+        actionBtn.textContent = originalText;
+        return false;
+    }
+}
+
+// ===================================
 // RENDER STEP
 // ===================================
 function renderStep() {
@@ -151,6 +190,7 @@ async function handleButtonClick() {
             showStatus('Please enter your name.', true);
             return;
         }
+        // Just advance to first question, no POST yet
         currentStep = 1;
         renderStep();
     }
@@ -164,58 +204,22 @@ async function handleButtonClick() {
             return;
         }
 
+        // Save progress to backend (answers array contains all answers so far)
+        const success = await saveProgress();
+
+        if (!success) {
+            return; // Error already shown, let user retry
+        }
+
         // Not the last question: advance to next
         if (currentStep < questions.length) {
             currentStep++;
             renderStep();
         }
-        // Last question: submit survey
+        // Last question: show thank you screen
         else {
-            await submitSurvey();
+            showSuccessScreen();
         }
-    }
-}
-
-// ===================================
-// SUBMIT SURVEY
-// ===================================
-async function submitSurvey() {
-    // Validate all answers are filled
-    for (let i = 0; i < questions.length; i++) {
-        if (!answers[i]) {
-            showStatus(`Please answer question ${i + 1}.`, true);
-            return;
-        }
-    }
-
-    // Disable button to prevent double submission
-    actionBtn.disabled = true;
-    actionBtn.textContent = 'Submitting...';
-
-    try {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/surveys/${surveyId}/responses`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name,
-                answers
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Success: Show thank you screen
-        showSuccessScreen();
-
-    } catch (error) {
-        console.error('Error submitting survey:', error);
-        showStatus('Could not submit, please try again.', true);
-        actionBtn.disabled = false;
-        actionBtn.textContent = 'Next';
     }
 }
 
@@ -226,9 +230,9 @@ function showSuccessScreen() {
     surveyCardEl.innerHTML = `
         <div class="success-screen">
             <h2>✓ Thank you, ${name}!</h2>
-            <p>Your feedback has been submitted.</p>
+            <p>Your answers have been submitted.</p>
             <p style="color: #7f8c8d; font-size: 14px; margin-top: 10px;">
-                You answered ${questions.length} question${questions.length !== 1 ? 's' : ''}.
+                You completed ${questions.length} question${questions.length !== 1 ? 's' : ''}.
             </p>
         </div>
     `;
