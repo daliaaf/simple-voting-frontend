@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Form</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Feedback Form</h1>
+
+        <div id="app">
+            <div id="loading" class="message">Loading survey...</div>
+            <div id="error" class="message error" style="display: none;"></div>
+
+            <div id="survey-container" style="display: none;">
+                <h2 id="survey-title"></h2>
+                <p style="color: #666; margin-bottom: 20px;">Please answer all questions honestly.</p>
+
+                <form id="survey-form">
+                    <div class="form-group">
+                        <label for="name">Your name</label>
+                        <input type="text" id="name" placeholder="Enter your name" required>
+                    </div>
+
+                    <div id="questions"></div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+
+                <div id="status" style="display: none; margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="survey.js"></script>
+</body>
+</html>
