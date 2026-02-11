@@ -1,44 +1,40 @@
-// DOM elements
-const surveyIdInput = document.getElementById('surveyId-input');
-const tokenInput = document.getElementById('token-input');
-const loadBtn = document.getElementById('load-responses-btn');
-const statusEl = document.getElementById('status');
+// ===================================
+// STATE
+// ===================================
+let surveyId = null;
+let refreshInterval = null;
+
+// ===================================
+// DOM ELEMENTS
+// ===================================
+const errorEl = document.getElementById('error');
+const loadingEl = document.getElementById('loading');
 const resultsContainer = document.getElementById('results-container');
 const surveyTitleEl = document.getElementById('survey-title');
 const totalCountEl = document.getElementById('total-count');
 const responsesTableWrapper = document.getElementById('responses-table-wrapper');
 
-// Utility functions
-function showElement(element) {
-    element.style.display = 'block';
+// ===================================
+// UTILITY FUNCTIONS
+// ===================================
+function showElement(el) {
+    el.style.display = 'block';
 }
 
-function hideElement(element) {
-    element.style.display = 'none';
+function hideElement(el) {
+    el.style.display = 'none';
 }
 
-function showStatus(message, isError = false) {
-    statusEl.textContent = message;
-    statusEl.className = isError ? 'message error' : 'message success';
-    showElement(statusEl);
+function showError(message) {
+    errorEl.textContent = message;
+    showElement(errorEl);
+    hideElement(loadingEl);
+    hideElement(resultsContainer);
 }
 
-function hideStatus() {
-    hideElement(statusEl);
-}
-
-// Get surveyId from URL
 function getSurveyIdFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('surveyId');
-}
-
-// Pre-fill surveyId if in URL
-function initializePage() {
-    const surveyId = getSurveyIdFromURL();
-    if (surveyId) {
-        surveyIdInput.value = surveyId;
-    }
 }
 
 // Format date/time
@@ -58,42 +54,49 @@ function formatDateTime(isoString) {
     return date.toLocaleString('en-US', options);
 }
 
-// Fetch survey responses
-async function fetchSurveyResponses(surveyId, adminToken) {
+// ===================================
+// LOAD RESPONSES
+// ===================================
+async function loadResponses(surveyId) {
     try {
         const response = await fetch(
-            `${BACKEND_BASE_URL}/api/surveys/${surveyId}/responses`,
-            {
-                headers: {
-                    'x-admin-token': adminToken
-                }
-            }
+            `${BACKEND_BASE_URL}/api/surveys/${surveyId}/responses`
         );
 
-        if (response.status === 401) {
-            showStatus('Invalid admin token.', true);
-            return null;
-        }
-
         if (response.status === 404) {
-            showStatus('Survey not found.', true);
-            return null;
+            showError('Survey not found');
+            // Stop auto-refresh on 404
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            return;
         }
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+
+        // Hide loading and error, show results
+        hideElement(loadingEl);
+        hideElement(errorEl);
+        showElement(resultsContainer);
+
+        // Render the data
+        renderResponses(data);
 
     } catch (error) {
         console.error('Error fetching survey responses:', error);
-        showStatus('Failed to load responses. Please check your connection and try again.', true);
-        return null;
+        showError('Failed to load responses. Please check your connection.');
+        // Don't stop auto-refresh on network errors - keep trying
     }
 }
 
-// Render responses table
+// ===================================
+// RENDER RESPONSES
+// ===================================
 function renderResponses(data) {
     const { title, questions, responses, totalResponses } = data;
 
@@ -114,15 +117,15 @@ function renderResponses(data) {
     nameHeader.textContent = 'Name';
     headerRow.appendChild(nameHeader);
 
-    // Submitted At column
+    // Last Updated column
     const timeHeader = document.createElement('th');
-    timeHeader.textContent = 'Submitted At';
+    timeHeader.textContent = 'Last Updated';
     headerRow.appendChild(timeHeader);
 
     // Question columns
     questions.forEach((question, index) => {
         const questionHeader = document.createElement('th');
-        questionHeader.textContent = `Q${index + 1}: ${question}`;
+        questionHeader.textContent = question;
         headerRow.appendChild(questionHeader);
     });
 
@@ -150,16 +153,16 @@ function renderResponses(data) {
             nameCell.textContent = response.name;
             row.appendChild(nameCell);
 
-            // Submitted At cell
+            // Last Updated cell
             const timeCell = document.createElement('td');
-            timeCell.textContent = formatDateTime(response.submittedAt);
+            timeCell.textContent = formatDateTime(response.updatedAt || response.submittedAt);
             timeCell.style.whiteSpace = 'nowrap';
             row.appendChild(timeCell);
 
             // Answer cells
             response.answers.forEach(answer => {
                 const answerCell = document.createElement('td');
-                answerCell.textContent = answer;
+                answerCell.textContent = answer || '-';
                 answerCell.style.maxWidth = '300px';
                 answerCell.style.wordWrap = 'break-word';
                 row.appendChild(answerCell);
@@ -174,66 +177,30 @@ function renderResponses(data) {
     // Clear and append table
     responsesTableWrapper.innerHTML = '';
     responsesTableWrapper.appendChild(table);
-
-    // Show results container
-    showElement(resultsContainer);
 }
 
-// Handle load responses button click
-async function handleLoadResponses() {
-    hideStatus();
-    hideElement(resultsContainer);
+// ===================================
+// INITIALIZE
+// ===================================
+function init() {
+    // Get surveyId from URL
+    surveyId = getSurveyIdFromURL();
 
-    // Get inputs
-    const surveyId = surveyIdInput.value.trim();
-    const adminToken = tokenInput.value.trim();
-
-    // Validate
     if (!surveyId) {
-        showStatus('Please enter a Survey ID.', true);
+        showError('Missing surveyId in URL');
         return;
     }
 
-    if (!adminToken) {
-        showStatus('Please enter an Admin Token.', true);
-        return;
-    }
+    // Load responses immediately
+    loadResponses(surveyId);
 
-    // Disable button while loading
-    loadBtn.disabled = true;
-    loadBtn.textContent = 'Loading...';
-
-    // Fetch responses
-    const data = await fetchSurveyResponses(surveyId, adminToken);
-
-    // Re-enable button
-    loadBtn.disabled = false;
-    loadBtn.textContent = 'Load Responses';
-
-    if (!data) {
-        return; // Error already shown
-    }
-
-    // Render responses
-    hideStatus();
-    renderResponses(data);
+    // Set up auto-refresh every 5 seconds
+    refreshInterval = setInterval(() => {
+        loadResponses(surveyId);
+    }, 5000);
 }
 
-// Event listeners
-loadBtn.addEventListener('click', handleLoadResponses);
-
-// Allow Enter key to submit
-surveyIdInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        handleLoadResponses();
-    }
-});
-
-tokenInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        handleLoadResponses();
-    }
-});
-
-// Initialize on page load
-initializePage();
+// ===================================
+// START
+// ===================================
+document.addEventListener('DOMContentLoaded', init);

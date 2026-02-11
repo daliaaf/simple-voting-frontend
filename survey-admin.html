@@ -11,14 +11,8 @@
         <h1>Survey Admin</h1>
 
         <div id="app">
-            <div class="form-group">
-                <label for="surveyId-input">Survey ID:</label>
-                <input type="text" id="surveyId-input" placeholder="e.g., event-feedback-1">
-            </div>
-
-            <button id="load-responses-btn" class="btn btn-primary">Load Responses</button>
-
-            <div id="status" class="message" style="display: none;"></div>
+            <div id="error" class="message error" style="display: none;"></div>
+            <div id="loading" class="message">Loading...</div>
 
             <div id="results-container" style="display: none;">
                 <h2 id="survey-title"></h2>
