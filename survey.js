@@ -1,42 +1,48 @@
-// State
+// ===================================
+// STATE
+// ===================================
 let surveyId = null;
-let surveyTitle = null;
+let surveyTitle = '';
 let questions = [];
-let currentStep = 0;
+let currentStep = 0;  // 0 = name, 1..N = questions
 let name = '';
 let answers = [];
-let isSubmitting = false;
 
-// DOM elements
+// ===================================
+// DOM ELEMENTS
+// ===================================
 const loadingEl = document.getElementById('loading');
 const errorEl = document.getElementById('error');
-const surveyContainerEl = document.getElementById('survey-container');
+const surveyCardEl = document.getElementById('survey-card');
 const surveyTitleEl = document.getElementById('survey-title');
+const instructionsEl = document.getElementById('instructions');
 const progressEl = document.getElementById('progress');
 const questionLabelEl = document.getElementById('question-label');
-const inputContainerEl = document.getElementById('input-container');
-const nextBtn = document.getElementById('next-btn');
+const inputWrapperEl = document.getElementById('input-wrapper');
+const actionBtn = document.getElementById('action-btn');
 const statusEl = document.getElementById('status');
 
-// Utility functions
-function showElement(element) {
-    element.style.display = 'block';
+// ===================================
+// UTILITY FUNCTIONS
+// ===================================
+function showElement(el) {
+    el.style.display = 'block';
 }
 
-function hideElement(element) {
-    element.style.display = 'none';
+function hideElement(el) {
+    el.style.display = 'none';
 }
 
 function showError(message) {
     errorEl.textContent = message;
     showElement(errorEl);
     hideElement(loadingEl);
-    hideElement(surveyContainerEl);
+    hideElement(surveyCardEl);
 }
 
-function showStatus(message, isSuccess = false) {
+function showStatus(message, isError = false) {
     statusEl.textContent = message;
-    statusEl.className = isSuccess ? 'message success' : 'message error';
+    statusEl.className = isError ? 'message error' : 'message success';
     showElement(statusEl);
 }
 
@@ -44,13 +50,14 @@ function hideStatus() {
     hideElement(statusEl);
 }
 
-// Get surveyId from URL
 function getSurveyIdFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('surveyId');
 }
 
-// Fetch survey from backend
+// ===================================
+// FETCH SURVEY
+// ===================================
 async function fetchSurvey() {
     try {
         const response = await fetch(`${BACKEND_BASE_URL}/api/surveys/${surveyId}`);
@@ -72,42 +79,41 @@ async function fetchSurvey() {
     }
 }
 
-// Render current step
-function render() {
+// ===================================
+// RENDER STEP
+// ===================================
+function renderStep() {
     hideStatus();
+    inputWrapperEl.innerHTML = '';
 
-    // Step 0: Name input
+    // STEP 0: Name input
     if (currentStep === 0) {
         hideElement(progressEl);
-        questionLabelEl.textContent = 'Your name';
+        questionLabelEl.textContent = 'What is your name?';
 
-        inputContainerEl.innerHTML = '';
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'name-input';
         input.placeholder = 'Enter your name';
         input.value = name;
-        input.className = 'form-control';
 
         input.addEventListener('input', (e) => {
             name = e.target.value.trim();
-            updateButtonState();
         });
 
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                handleNext();
+                handleButtonClick();
             }
         });
 
-        inputContainerEl.appendChild(input);
-        nextBtn.textContent = 'Next';
+        inputWrapperEl.appendChild(input);
+        actionBtn.textContent = 'Next';
 
-        // Auto-focus
         setTimeout(() => input.focus(), 0);
     }
-    // Steps 1 to N: Question inputs
-    else if (currentStep <= questions.length) {
+    // STEPS 1..N: Question inputs
+    else {
         const questionIndex = currentStep - 1;
         const questionText = questions[questionIndex];
 
@@ -115,103 +121,80 @@ function render() {
         progressEl.textContent = `Question ${currentStep} of ${questions.length}`;
         questionLabelEl.textContent = questionText;
 
-        inputContainerEl.innerHTML = '';
         const textarea = document.createElement('textarea');
-        textarea.id = `question-${questionIndex}`;
-        textarea.className = 'textarea';
-        textarea.placeholder = 'Enter your answer here...';
+        textarea.id = `answer-${questionIndex}`;
+        textarea.placeholder = 'Type your answer here...';
         textarea.value = answers[questionIndex] || '';
 
         textarea.addEventListener('input', (e) => {
             answers[questionIndex] = e.target.value.trim();
-            updateButtonState();
         });
 
-        inputContainerEl.appendChild(textarea);
+        inputWrapperEl.appendChild(textarea);
 
         // Update button text
-        if (currentStep === questions.length) {
-            nextBtn.textContent = 'Submit';
+        if (currentStep < questions.length) {
+            actionBtn.textContent = 'Next';
         } else {
-            nextBtn.textContent = 'Next';
+            actionBtn.textContent = 'Submit';
         }
 
-        // Auto-focus
         setTimeout(() => textarea.focus(), 0);
     }
-
-    updateButtonState();
 }
 
-// Update button state (enable/disable)
-function updateButtonState() {
-    if (currentStep === 0) {
-        nextBtn.disabled = !name || isSubmitting;
-    } else {
-        const questionIndex = currentStep - 1;
-        const currentAnswer = answers[questionIndex] || '';
-        nextBtn.disabled = !currentAnswer || isSubmitting;
-    }
-}
-
-// Handle Next/Submit button click
-async function handleNext() {
-    if (nextBtn.disabled) return;
-
+// ===================================
+// BUTTON CLICK HANDLER
+// ===================================
+async function handleButtonClick() {
     hideStatus();
 
-    // Step 0: Save name and move to first question
+    // STEP 0: Name step
     if (currentStep === 0) {
         if (!name) {
-            showStatus('Please enter your name.');
+            showStatus('Please enter your name.', true);
             return;
         }
-        currentStep++;
-        render();
+        currentStep = 1;
+        renderStep();
     }
-    // Steps 1 to N-1: Save answer and move to next question
-    else if (currentStep < questions.length) {
+    // STEPS 1..N: Question steps
+    else {
         const questionIndex = currentStep - 1;
-        if (!answers[questionIndex]) {
-            showStatus('Please answer the current question.');
-            return;
-        }
-        currentStep++;
-        render();
-    }
-    // Step N: Submit all answers
-    else if (currentStep === questions.length) {
-        const questionIndex = currentStep - 1;
-        if (!answers[questionIndex]) {
-            showStatus('Please answer the current question.');
+        const answer = answers[questionIndex] || '';
+
+        if (!answer) {
+            showStatus('Please provide an answer before continuing.', true);
             return;
         }
 
-        await submitSurvey();
+        // Not the last question: advance to next
+        if (currentStep < questions.length) {
+            currentStep++;
+            renderStep();
+        }
+        // Last question: submit survey
+        else {
+            await submitSurvey();
+        }
     }
 }
 
-// Submit survey to backend
+// ===================================
+// SUBMIT SURVEY
+// ===================================
 async function submitSurvey() {
-    // Validate all data
-    if (!name) {
-        showStatus('Name is required.');
-        return;
-    }
-
+    // Validate all answers are filled
     for (let i = 0; i < questions.length; i++) {
         if (!answers[i]) {
-            showStatus(`Please answer question ${i + 1}.`);
+            showStatus(`Please answer question ${i + 1}.`, true);
             return;
         }
     }
 
-    // Prevent double submission
-    if (isSubmitting) return;
-    isSubmitting = true;
-
-    nextBtn.disabled = true;
-    nextBtn.textContent = 'Submitting...';
+    // Disable button to prevent double submission
+    actionBtn.disabled = true;
+    actionBtn.textContent = 'Submitting...';
 
     try {
         const response = await fetch(`${BACKEND_BASE_URL}/api/surveys/${surveyId}/responses`, {
@@ -229,30 +212,36 @@ async function submitSurvey() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Success - show success message
+        // Success: Show thank you screen
         showSuccessScreen();
 
     } catch (error) {
         console.error('Error submitting survey:', error);
-        showStatus('Could not submit, please try again.');
-        nextBtn.disabled = false;
-        nextBtn.textContent = 'Submit';
-        isSubmitting = false;
+        showStatus('Could not submit, please try again.', true);
+        actionBtn.disabled = false;
+        actionBtn.textContent = 'Submit';
     }
 }
 
-// Show success screen
+// ===================================
+// SUCCESS SCREEN
+// ===================================
 function showSuccessScreen() {
-    surveyContainerEl.innerHTML = `
-        <div class="success-container">
-            <h2>✓ Thank you!</h2>
-            <p>Your feedback has been submitted successfully.</p>
+    surveyCardEl.innerHTML = `
+        <div class="success-screen">
+            <h2>✓ Thank you, ${name}!</h2>
+            <p>Your feedback has been submitted.</p>
+            <p style="color: #7f8c8d; font-size: 14px; margin-top: 10px;">
+                You answered ${questions.length} question${questions.length !== 1 ? 's' : ''}.
+            </p>
         </div>
     `;
 }
 
-// Initialize survey
-async function initSurvey() {
+// ===================================
+// INITIALIZE
+// ===================================
+async function init() {
     // Get surveyId from URL
     surveyId = getSurveyIdFromURL();
 
@@ -261,33 +250,39 @@ async function initSurvey() {
         return;
     }
 
-    // Fetch survey
+    // Fetch survey definition
     const survey = await fetchSurvey();
 
     if (!survey) {
         return; // Error already shown
     }
 
-    // Initialize state
+    // Store survey data
     surveyTitle = survey.title;
     questions = survey.questions;
     answers = new Array(questions.length).fill('');
+
+    // Initialize state
     currentStep = 0;
     name = '';
 
-    // Display survey
+    // Update UI
     surveyTitleEl.textContent = surveyTitle;
 
     hideElement(loadingEl);
     hideElement(errorEl);
-    showElement(surveyContainerEl);
+    showElement(surveyCardEl);
 
     // Render first step
-    render();
+    renderStep();
 }
 
-// Event listeners
-nextBtn.addEventListener('click', handleNext);
+// ===================================
+// EVENT LISTENERS
+// ===================================
+actionBtn.addEventListener('click', handleButtonClick);
 
-// Initialize on page load
-initSurvey();
+// ===================================
+// START
+// ===================================
+init();

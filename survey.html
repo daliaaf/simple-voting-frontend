@@ -6,56 +6,66 @@
     <title>Feedback Form</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        textarea.textarea {
+        /* Additional styles for survey */
+        .progress-text {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .question-label {
+            display: block;
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        textarea {
             width: 100%;
+            min-height: 150px;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
             font-family: inherit;
-            transition: border-color 0.3s;
             resize: vertical;
-            min-height: 120px;
+            transition: border-color 0.3s;
         }
 
-        textarea.textarea:focus {
+        textarea:focus {
             outline: none;
             border-color: #3498db;
         }
 
-        #progress {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        #question-label {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        #input-container {
+        .input-wrapper {
             margin-bottom: 20px;
         }
 
-        .success-container {
+        .success-screen {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 0;
         }
 
-        .success-container h2 {
+        .success-screen h2 {
             color: #27ae60;
-            margin-bottom: 10px;
+            font-size: 28px;
+            margin-bottom: 15px;
         }
 
-        .success-container p {
-            color: #666;
+        .success-screen p {
+            color: #555;
             font-size: 16px;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -67,18 +77,19 @@
             <div id="loading" class="message">Loading survey...</div>
             <div id="error" class="message error" style="display: none;"></div>
 
-            <div id="survey-container" style="display: none;">
+            <div id="survey-card" style="display: none;">
                 <h2 id="survey-title"></h2>
+                <p id="instructions" class="instructions">Please answer each question thoughtfully.</p>
 
-                <div id="progress" style="display: none;"></div>
+                <div id="progress" class="progress-text" style="display: none;"></div>
 
-                <label id="question-label"></label>
+                <label id="question-label" class="question-label"></label>
 
-                <div id="input-container"></div>
+                <div id="input-wrapper" class="input-wrapper"></div>
 
-                <button id="next-btn" class="btn btn-primary">Next</button>
+                <button id="action-btn" class="btn btn-primary">Next</button>
 
-                <div id="status" style="display: none; margin-top: 20px;"></div>
+                <div id="status" class="message" style="display: none; margin-top: 20px;"></div>
             </div>
         </div>
     </div>
