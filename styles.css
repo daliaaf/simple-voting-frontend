@@ -136,12 +136,31 @@ input[type="radio"] + label {
     border: 1px solid #f5c6cb;
 }
 
+/* Wide container for tables with many columns */
+.container-wide {
+    max-width: 1200px;
+}
+
 /* Table */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
     margin-bottom: 20px;
+}
+
+#responses-table-wrapper {
+    overflow-x: auto;
+}
+
+#responses-table-wrapper table {
+    width: max-content;
+    min-width: 100%;
+}
+
+#responses-table-wrapper th,
+#responses-table-wrapper td {
+    white-space: nowrap;
 }
 
 thead {
